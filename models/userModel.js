@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        required: true,
+        unique: true    
+    },
     firstname: {
         type: String,
         required: true  
@@ -8,12 +13,30 @@ const userSchema = new mongoose.Schema({
     lastname: {
         type: String,
         required: true
-    },
-    email: {
+    },type: {
         type: String,
         required: true,
-        unique: true    
-    }
+        default: "customer"
+    },
+    whatsapp: {
+        type: String,
+        required: true
+    },
+    phone:{
+        type: String,
+        required: true
+    },
+    disable:{
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    emailVerified:{
+        type: Boolean,
+        required: true,
+        default: false
+    },
+   
 });
 
 // Create the "Users" model
