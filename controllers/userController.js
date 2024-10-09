@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import { error } from "console";
+import jwt from "jsonwebtoken";
 
 // GET request handler
 export function getRequest(req, res) {
@@ -80,4 +81,29 @@ export function deleteRequest(req, res) {
             error: error.message
         });
     });
+}
+
+export function loginUsers(req,res){
+    const credential=req.body;
+    User.findOne({email:credential.email, passwod:credential.passwod}).then(
+        (user)=>{
+            if(user==null){
+                res.status(403).json({
+                    message:"User cant find"
+                })
+            }else{
+                const payloader={
+                    email:user.email,
+                    firstname:user.firstname,
+                    lastname:user.lastname
+                }
+                const token=jwt.sign({payloader},"secret",{expiresIn:"1h"});
+                res.json({
+                    message:"Login Success",
+                    detailsofuser:user,
+                    token:token
+                })
+            }
+        }
+    )
 }
