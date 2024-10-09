@@ -1,7 +1,5 @@
-import GalleryItems from "../models/galleryItems";
-import express from express;
+import GalleryItems from "../models/galleryItems.js";
 
-const galleryItemsController = express.Router();
 
 export function getGalleryItems(req,res){
     const name=req.body.name;
