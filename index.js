@@ -3,11 +3,13 @@ import express from 'express'
 import { connect } from 'http2';
 import mongoose from 'mongoose';
 import userRouter from './routes/userRouter.js';
+import galleryItemsRoute from './routes/galleryItemsRoute.js';
 
 
 const app = express();
 app.use(bodyParser.json());
 app.use("/api/users",userRouter);
+app.use("/api/gallery",galleryItemsRoute);
 
 const connection ="mongodb+srv://user1:123@cluster0.lynjp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
