@@ -2,8 +2,21 @@ import GalleryItems from "../models/galleryItems.js";
 
 
 export function getGalleryItems(req,res){
-    const name=req.body.name;
-    res.send("Get Request");
+    const galleryItem=req.body;
+    GalleryItems.find().then(
+        (list)=>{
+            res.json({
+                galleryItems:list
+            });
+        }
+    ).catch(
+        (error)=>{
+            res.json({
+                message:"Gallery Item can't be retrieved",
+                error:error.message
+            })
+        }
+    )
 }
 
 export function createGalleryItems(req,res){
