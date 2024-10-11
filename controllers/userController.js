@@ -3,6 +3,9 @@ import User from "../models/userModel.js";
 import { error } from "console";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // GET request handler
 export function getRequest(req, res) {
@@ -109,7 +112,7 @@ export function loginUsers(req,res){
                     firstname:user.firstname,
                     lastname:user.lastname
                 }
-                const token=jwt.sign({payloader},"secret",{expiresIn:"1h"});
+                const token=jwt.sign({payloader},process.env.JWT_SECRET,{expiresIn:"1h"});
                 res.json({
                     message:"Login Success",
                     detailsofuser:user,
