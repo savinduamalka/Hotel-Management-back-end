@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import { error } from "console";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 // GET request handler
 export function getRequest(req, res) {
@@ -19,7 +20,11 @@ export function getRequest(req, res) {
 
 // POST request handler
 export function postRequest(req, res) {
-    const user = req.body;   // Get user data from request body
+    const user = req.body;   
+    const password = user.password;
+    const saltRound = 10;
+    const hashPassword = bcrypt.hashSync(password,saltRound);
+    user.password = hashPassword;
     const newUser = new User(user);
 
     newUser.save()
@@ -85,14 +90,21 @@ export function deleteRequest(req, res) {
 
 export function loginUsers(req,res){
     const credential=req.body;
-    User.findOne({email:credential.email, passwod:credential.passwod}).then(
+    const inputPassword = credential.password;
+
+    User.findOne({email:credential.email}).then(
         (user)=>{
             if(user==null){
                 res.status(403).json({
                     message:"User cant find"
                 })
             }else{
-                const payloader={
+                const isPasswordMatch=bcrypt.compareSync(inputPassword,user.password);
+                if(!isPasswordMatch){
+                    res.status(403).json({
+                        message:"Password is incorrect"
+                    });
+                }else{const payloader={
                     email:user.email,
                     firstname:user.firstname,
                     lastname:user.lastname
@@ -102,7 +114,8 @@ export function loginUsers(req,res){
                     message:"Login Success",
                     detailsofuser:user,
                     token:token
-                })
+                })}
+            
             }
         }
     )
