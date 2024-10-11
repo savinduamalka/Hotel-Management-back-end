@@ -112,7 +112,7 @@ export function loginUsers(req,res){
                     firstname:user.firstname,
                     lastname:user.lastname
                 }
-                const token=jwt.sign({payloader},process.env.JWT_SECRET,{expiresIn:"1h"});
+                const token=jwt.sign({payloader},process.env.JWT_SECRET,{expiresIn:"48h"});
                 res.json({
                     message:"Login Success",
                     detailsofuser:user,
