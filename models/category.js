@@ -7,13 +7,21 @@ const categorySchema = mongoose.Schema(
             required:true,
             unique:true
         },
+        price:{
+            type:Number,
+            required:true
+        },
+        features:[
+            {
+                type:String,
+            }
+        ],
         description:{
             type:String,
             required:true
         },
-        price:{
-            type:Number,
-            required:true
+        image:{
+            type:String,
         }
     }
 );
