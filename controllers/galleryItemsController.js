@@ -17,7 +17,7 @@ export function getGalleryItems(req, res) {
 }
 
 export function createGalleryItems(req, res) {
-  const user = req.body.user;
+  const user = req.user;
   if (user == null) {
      res.status(403).json({
       message: "Please login to create gallery item",
@@ -25,7 +25,6 @@ export function createGalleryItems(req, res) {
     return;
   }
   
-
   const galleryItem = req.body.item;
 
   const newGalleryItem = new GalleryItems(galleryItem);
