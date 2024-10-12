@@ -1,7 +1,6 @@
 import Category from '../models/category.js';
 
 export function getCategories(req, res) {
-    const category = req.body.name;
     Category.find()
         .then((list) => {
             res.json({
@@ -9,8 +8,8 @@ export function getCategories(req, res) {
             });
         })
         .catch((error) => {
-            res.json({
-                message: "Category can't be retrieved",
+            res.status(500).json({
+                message: "Categories can't be retrieved",
                 error: error.message,
             });
         });
@@ -18,28 +17,34 @@ export function getCategories(req, res) {
 
 export function createCategory(req, res) {
     const user = req.user;
-    if (user == null) {
+    if (!user) {
         res.status(403).json({
             message: "Please login to create category",
         });
         return;
     }
+    if (user.payloader.type != 'admin') { 
+        res.status(403).json({
+            message: "You are not allowed to create category",
+        });
+        return;
+    }
 
-    const category = req.body;
+    const categoryData = req.body;
 
-    const newCategory = new Category(category);
+    const newCategory = new Category(categoryData);
 
-    newCategory
-        .save()
-        .then(() => {
-            res.json({
+    newCategory.save()
+        .then((result) => {
+            res.status(201).json({
                 message: "Category created successfully",
+                result: result,
             });
         })
         .catch((error) => {
-            res.status(400).json({
+             res.status(400).json({
                 message: "Category can't be created",
                 error: error.message,
             });
         });
-}
+};
