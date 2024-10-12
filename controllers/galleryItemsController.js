@@ -24,27 +24,28 @@ export function createGalleryItems(req, res) {
     });
     return;
   }
-  if(user.type!=admin){
+  if(user.payloader.type!='admin'){
     res.status(403).json({
       message: "You are not allowed to create gallery item",
     });
     return;
 }
   
-  const galleryItem = req.body.item;
+  const galleryItem = req.body;
 
   const newGalleryItem = new GalleryItems(galleryItem);
 
   newGalleryItem.save()
-    .then(() => {
+    .then((result) => {
       res.json({
         message: "Gallery Item created successfully",
+        galleryItem: result
       });
     })
     .catch((error) => {
       res.status(400).json({
         message: "Gallery Item can't be created",
-        error: error.message,
+        error: error
       });
     });
 }
