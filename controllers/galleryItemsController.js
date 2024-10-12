@@ -1,7 +1,7 @@
 import GalleryItems from "../models/galleryItems.js";
 
 export function getGalleryItems(req, res) {
-  const galleryItem = req.body;
+
   GalleryItems.find()
     .then((list) => {
       res.json({
@@ -24,13 +24,18 @@ export function createGalleryItems(req, res) {
     });
     return;
   }
+  if(user.type!=admin){
+    res.status(403).json({
+      message: "You are not allowed to create gallery item",
+    });
+    return;
+}
   
   const galleryItem = req.body.item;
 
   const newGalleryItem = new GalleryItems(galleryItem);
 
-  newGalleryItem
-    .save()
+  newGalleryItem.save()
     .then(() => {
       res.json({
         message: "Gallery Item created successfully",
