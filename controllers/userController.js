@@ -129,3 +129,13 @@ export function loginUsers(req, res) {
     }
   });
 }
+
+export function checkAdmin(req){
+  if(!req.user){
+    return false;
+  }
+  if(req.payloader.type != 'admin'){
+    return false;
+  }
+  return true;
+}
