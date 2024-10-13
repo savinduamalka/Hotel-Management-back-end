@@ -1,4 +1,5 @@
 import GalleryItems from "../models/galleryItems.js";
+import { checkAdmin } from "./userController.js";
 
 export function getGalleryItems(req, res) {
 
@@ -17,19 +18,12 @@ export function getGalleryItems(req, res) {
 }
 
 export function createGalleryItems(req, res) {
-  const user = req.user;
-  if (user == null) {
-     res.status(403).json({
-      message: "Please login to create gallery item",
+  if(!checkAdmin(req)){
+    res.status(403).json({
+      message: "You are not allowed to create Gallery Item",
     });
     return;
   }
-  if(user.payloader.type!='admin'){
-    res.status(403).json({
-      message: "You are not allowed to create gallery item",
-    });
-    return;
-}
   
   const galleryItem = req.body;
 
@@ -45,6 +39,53 @@ export function createGalleryItems(req, res) {
     .catch((error) => {
       res.status(400).json({
         message: "Gallery Item can't be created",
+        error: error
+      });
+    });
+}
+
+export function updateGalleryItemsByName(req, res) {
+  if(!checkAdmin(req)){
+    res.status(403).json({
+      message: "You are not allowed to update Gallery Item",
+    });
+    return;
+  }
+  const galleryName = req.params.name;
+  const galleryItem = req.body;
+  GalleryItems.findOneAndUpdate({ name: galleryName }, galleryItem, { new: true })
+    .then((result) => {
+      res.json({
+        message: "Gallery Item updated successfully",
+        galleryItem: result
+      });
+    })
+    .catch((error) => {
+      res.status(400).json({
+        message: "Gallery Item can't be updated",
+        error: error
+      });
+    });
+}
+
+export function deleteGalleryItemsbyName(req, res) {
+  if(!checkAdmin(req)){
+    res.status(403).json({
+      message: "You are not allowed to delete Gallery Item",
+    });
+    return;
+  }
+  const galleryName = req.params.name;
+  GalleryItems.deleteOne({ name: galleryName })
+    .then((result) => {
+      res.json({
+        message: "Gallery Item deleted successfully",
+        galleryItem: result
+      });
+    })
+    .catch((error) => {
+      res.status(400).json({
+        message: "Gallery Item can't be deleted",
         error: error
       });
     });
