@@ -134,7 +134,7 @@ export function checkAdmin(req){
   if(!req.user){
     return false;
   }
-  if(req.payloader.type != 'admin'){
+  if(req.user.type != 'admin'){
     return false;
   }
   return true;
