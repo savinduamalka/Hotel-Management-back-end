@@ -1,5 +1,7 @@
+import { error } from "console";
 import Room from "../models/roomModel.js";
 import { checkAdmin } from "./userController.js";
+import { stat } from "fs";
 
 export function createRoom(req, res) {
   if (!checkAdmin(req)) {
@@ -124,4 +126,44 @@ export function deleteRoomByRoomId(req,res){
       });
     }
   );
+}
+
+export function updateRoomByRoomId(req,res){
+  if(!checkAdmin(req)){
+    res.status(403).json({
+      message: "You are not authorized"
+    })
+    return;
+  }
+
+  const updatedRoom = req.body;
+  if(Object.keys(updatedRoom).length===0){
+    res.status(400).json({
+      message: "No data provided to update the room"
+    })
+    return;
+  }
+
+  Room.findOneAndUpdate({RoomId:req.params.RoomId},updatedRoom,{new:true, runValidators: true}) // runValidators are doing checking the constraints such as dataType
+  .then(
+    (result)=>{
+      if(!result){
+        res.status(404).json({
+          message:"Can not find Room"
+        })
+        return;
+      }
+      res.json({
+        message: "Room Updated Successfully",
+        result: result
+      })
+    }
+  ).catch(
+    (err)=>{
+      res.status(500).json({
+        message: "Room Updated Fail !",
+        error: err
+      })
+    }
+  )
 }
