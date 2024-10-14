@@ -57,14 +57,39 @@ export function getRoomByRoomId(req,res){
       res.json({
       message:"Room retrieved Successfully",
       room:result
-    })
+    });
     }
   ).catch(
     (error)=>{
       res.status(500).json({
         message: "Failed to retrieve room",
         error:error
+      });
+    }
+  );
+}
+
+export function getRoomByCategory(req,res){
+  Room.find({category:req.params.category})
+  .then(
+    (result)=>{
+      if(result.length===0){ //find function will return an array, so if there is no result, the condition of !result become false, thats why checked length here
+        res.status(404).json({
+          message: "No category available with entered Category name"
+        })
+        return;
+      }
+      res.json({
+        message: "Rooms find by category name Successfully",
+        list:result
       })
     }
-  )
+  ).catch(
+    (error)=>{
+      res.status(500).json({
+        message: "Rooms find by category name Failed!",
+        error:error
+      });
+    }
+  );
 }
