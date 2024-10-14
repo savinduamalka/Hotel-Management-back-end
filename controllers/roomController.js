@@ -93,3 +93,35 @@ export function getRoomByCategory(req,res){
     }
   );
 }
+
+export function deleteRoomByRoomId(req,res){
+  if(!checkAdmin(req)){
+    res.json({
+      message:"You are not authorized"
+    })
+    return;
+  }
+
+  Room.findOneAndDelete({RoomId:req.params.RoomId})
+  .then(
+    (result)=>{
+      if(!result){
+        res.json({
+          message:"Can't find the Room"
+        })
+        return;
+      }
+      res.json({
+        message:"Room Deleted Successfully",
+        result:result
+      })
+    }
+  ).catch(
+    (error)=>{
+      res.json({
+        message:"Room Deletion failed",
+        error:error
+      });
+    }
+  );
+}
