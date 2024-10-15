@@ -139,3 +139,13 @@ export function checkAdmin(req){
   }
   return true;
 }
+
+export function checkCustomer(req){
+  if(!req.user){
+    return false;
+  }
+  if(!req.user.type!='customer'){
+    return false;
+  }
+  return true;
+}
