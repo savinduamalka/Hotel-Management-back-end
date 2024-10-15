@@ -81,3 +81,29 @@ export function getBooking(req,res){
         })
     }
 }
+
+export function cancelBooking(req, res){
+    if(!checkAdmin(req)){
+        res.json({
+            message: "You can not cancel a booking"
+        })
+        console.log(req.user.type);
+        return;
+    }
+    Booking.findOneAndUpdate({bookingId:req.params.bookingId},{status:"Cancelled"},{new:true})
+    .then(
+        (result)=>{
+            res.json({
+                message:"Booking cancelled successfully",
+                result: result
+            });
+        }
+    ).catch(
+        (err)=>{
+            res.status(500).json({
+                message: "Failed to cancel the booking",
+                error: err
+            });
+        }
+    )
+}
