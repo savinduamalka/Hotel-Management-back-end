@@ -108,7 +108,6 @@ export function cancelBooking(req, res){
     )
 }
 
-//confirmend booking
 export function confirmBooking(req,res){
     if(!checkAdmin(req)){
         res.json({
@@ -130,6 +129,35 @@ export function confirmBooking(req,res){
                 message: "Failed to confirm the booking",
                 error: err
             });
+        }
+    )
+}
+
+export function deleteBooking(req,res){
+    if(!checkCustomer(req)){
+       return res.status(403).json({
+            message: "You are not allowed to delete booking"
+        });
+    }
+    Booking.findOneAndDelete({bookingId:req.params.bookingId})
+    .then(
+        (result)=>{
+            if(!result){
+                return res.json({
+                    message:"Can't find the booking"
+                })
+            }
+        res.json({
+            message:"Booking deleted successfully",
+            DeletedBooking : result
+        });
+    })
+    .catch(
+        (err)=>{
+            res.status(500).json({
+                message:"Failed to delete the booking",
+                error:err
+            })
         }
     )
 }
