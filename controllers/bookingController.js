@@ -107,3 +107,29 @@ export function cancelBooking(req, res){
         }
     )
 }
+
+//confirmend booking
+export function confirmBooking(req,res){
+    if(!checkAdmin(req)){
+        res.json({
+            message: "You can not confirm a booking"
+        })
+        return;
+    }
+    Booking.findOneAndUpdate({bookingId:req.params.bookingId},{status:"Confirmed"},{new:true})
+    .then(
+        (result)=>{
+            res.json({
+                message:"Booking confirmed successfully",
+                result: result
+            });
+        }
+    ).catch(
+        (err)=>{
+            res.status(500).json({
+                message: "Failed to confirm the booking",
+                error: err
+            });
+        }
+    )
+}
