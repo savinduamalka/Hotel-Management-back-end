@@ -144,7 +144,7 @@ export function checkCustomer(req){
   if(!req.user){
     return false;
   }
-  if(!req.user.type!='customer'){
+  if(req.user.type!='customer'){
     return false;
   }
   return true;
