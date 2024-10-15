@@ -1,5 +1,6 @@
+import { error } from 'console';
 import Booking from '../models/bookingModel.js';
-import { checkCustomer } from './userController.js';
+import { checkAdmin, checkCustomer } from './userController.js';
 
 
 export function createBooking(req, res) {
@@ -39,4 +40,44 @@ export function createBooking(req, res) {
                 error: error
             });
         }).catch();
+}
+
+export function getBooking(req,res){
+    if(checkAdmin(req)){
+        Booking.find().then(
+            (result)=>{
+                res.json({
+                    message: "Getting all booking details successfully",
+                    list: result
+                });
+            }
+        ).catch(
+            (err)=>{
+                res.status(500).json({
+                    message: "Failed to get details of booking",
+                    error:err
+                });
+            }
+        )
+    }else if(checkCustomer(req)){
+        Booking.find({email:req.user.email}).then(
+            (result)=>{
+                res.json({
+                    message: "Booking details according to User Email : " +req.user.email,
+                    list: result
+                })
+            }
+        ).catch(
+            (err)=>{
+                res.status(500).json({
+                    message: "Failed to get details of booking",
+                    error: err
+                })
+            }
+        )
+    }else{
+        res.status(403).json({
+            message: "Access denied. Please login first"
+        })
+    }
 }
