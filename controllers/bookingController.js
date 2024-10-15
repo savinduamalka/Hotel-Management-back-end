@@ -90,7 +90,7 @@ export function cancelBooking(req, res){
         console.log(req.user.type);
         return;
     }
-    Booking.findOneAndUpdate({bookingId:req.params.bookingId},{status:"Cancelled"},{new:true})
+    Booking.findOneAndUpdate({bookingId:req.params.bookingId},{status:"Cancelled", reason:req.body.reason},{new:true})
     .then(
         (result)=>{
             res.json({
