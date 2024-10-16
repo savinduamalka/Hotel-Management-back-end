@@ -116,6 +116,7 @@ export function loginUsers(req, res) {
           firstName: user.firstname,
           lastName: user.lastname,
           type: user.type,
+          phone: user.phone,
         };
         const token = jwt.sign( payloader , process.env.JWT_SECRET, {
           expiresIn: "48h",
