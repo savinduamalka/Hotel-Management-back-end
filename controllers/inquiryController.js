@@ -110,3 +110,25 @@ export function updateInquiryReply(req, res) {
         });
       });
     }
+
+    export function deleteInquiry(req,res){
+        if(!checkCustomer(req)){
+            res.status(403).json({
+                message: "Please login as a customer to delete the inquiry"
+            });
+            return;
+        }
+        Inquiry.findOneAndDelete({email:req.user.email})
+        .then((result)=>{
+            res.json({
+                message: "Inquiry deleted successfully",
+                inquiry: result
+            });
+        })
+        .catch((error)=>{
+            res.json({
+                message: "Inquiry failed to delete",
+                error: error
+            });
+        });
+    }
