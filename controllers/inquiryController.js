@@ -1,5 +1,5 @@
 import Inquiry from "../models/inquiryModel.js";
-import { checkCustomer } from "./userController.js";
+import { checkAdmin, checkCustomer } from "./userController.js";
 
 export function createInquiry(req,res){
     if(!checkCustomer(req)){
@@ -35,3 +35,39 @@ export function createInquiry(req,res){
             });
         });
 }
+
+export function getInquiry(req, res) {
+    if (!checkAdmin(req) && !checkCustomer(req)) {
+      return res.status(403).json({
+        message: "Unauthorized access, only admin or customer can view inquiries",
+      });
+    }
+  
+    if (checkAdmin(req)) {
+      Inquiry.find()
+        .then((inquiries) => {
+          res.status(200).json({
+            inquiries: inquiries,
+          });
+        })
+        .catch((error) => {
+          res.status(500).json({
+            message: "Failed to retrieve inquiries",
+            error: error,
+          });
+        });
+    } else {
+      Inquiry.find({ email: req.user.email })
+        .then((inquiries) => {
+          res.status(200).json({
+            inquiries: inquiries,
+          });
+        })
+        .catch((error) => {
+          res.status(500).json({
+            message: "Failed to retrieve inquiries",
+            error: error,
+          });
+        });
+    }
+  }
