@@ -71,3 +71,42 @@ export function getInquiry(req, res) {
         });
     }
   }
+
+
+export function updateInquiryReply(req, res) {
+    if (!checkAdmin(req)) {
+      return res.status(403).json({
+        message: "Unauthorized access, only admin can update inquiries",
+      });
+    }
+  
+    const inquiryId = req.params.inquiryId;
+    const inquiryReply = req.body.inquiryReply;
+  
+    Inquiry.findById(inquiryId)
+      .then((inquiry) => {
+        if (!inquiry) {
+          return res.status(404).json({
+            message: "Inquiry not found",
+          });
+        }
+  
+        inquiry.inquiryReply = inquiryReply;
+        inquiry.respondedAt = new Date();
+        inquiry.status = "Responded";
+  
+        return inquiry.save();
+      })
+      .then((updatedInquiry) => {
+        res.status(200).json({
+          message: "Inquiry updated successfully",
+          inquiry: updatedInquiry,
+        });
+      })
+      .catch((error) => {
+        res.status(500).json({
+          message: "Failed to update inquiry",
+          error: error,
+        });
+      });
+    }
