@@ -9,6 +9,7 @@ import categoryRouter from './routes/categoryRouter.js';
 import roomRouter from './routes/roomRoute.js';
 import bookingRouter from './routes/bookingRouter.js';
 import inqiuiryRouter from './routes/inquiryRouter.js';
+import feedbackRouter from './routes/feedbackRouter.js';
 
 dotenv.config();
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/categories",categoryRouter);
 app.use("/api/room",roomRouter);
 app.use("/api/booking",bookingRouter);
 app.use("/api/inquiry",inqiuiryRouter);
+app.use("/api/feedback",feedbackRouter);
 
 
 
