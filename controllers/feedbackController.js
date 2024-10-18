@@ -1,5 +1,5 @@
 import Feedback from "../models/feedbackModel.js";
-import { checkCustomer } from "./userController.js";
+import { checkAdmin, checkCustomer } from "./userController.js";
 
 export function createFeedback(req, res) {
   if (!checkCustomer(req)) {
@@ -33,3 +33,32 @@ export function createFeedback(req, res) {
       });
     });
 }
+
+
+export function updateFeedbackVisibility(req, res) {
+  if (!checkAdmin(req)) {
+    return res.status(403).json({
+      message: "Unauthorized access, only admin can update feedback visibility",
+    });
+  }
+
+  Feedback.findOneAndUpdate(
+    { feedbackId: req.params.feedbackId },
+    { visibility: req.body.visibility },
+    { new: true }
+  )
+    .then((result) => {
+      res.json({
+        message: "Feedback visibility updated successfully",
+        feedback: result,
+      });
+    })
+    .catch((error) => {
+      res.json({
+        message: "Failed to update feedback visibility",
+        error: error,
+      });
+    });
+}
+
+
