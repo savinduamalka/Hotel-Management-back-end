@@ -61,4 +61,36 @@ export function updateFeedbackVisibility(req, res) {
     });
 }
 
+export function getFeedback(req, res) {
+  if (checkAdmin(req)) {
+    Feedback.find({})
+      .then((result) => {
+        res.json({
+          message: "All feedbacks",
+          feedbacks: result,
+        });
+      })
+      .catch((error) => {
+        res.json({
+          message: "Failed to get feedbacks",
+          error: error,
+        });
+      });
+  } else {
+    Feedback.find({ email: req.user.email })
+      .then((result) => {
+        res.json({
+          message: "Feedbacks by customer : " + req.user.email,
+          feedbacks: result,
+        });
+      })
+      .catch((error) => {
+        res.json({
+          message: "Failed to get feedbacks",
+          error: error
+        });
+      });
+  }
+}
+
 
