@@ -34,7 +34,6 @@ export function createFeedback(req, res) {
     });
 }
 
-
 export function updateFeedbackVisibility(req, res) {
   if (!checkAdmin(req)) {
     return res.status(403).json({
@@ -87,10 +86,51 @@ export function getFeedback(req, res) {
       .catch((error) => {
         res.json({
           message: "Failed to get feedbacks",
-          error: error
+          error: error,
         });
       });
   }
 }
 
-
+export function deleteFeedback(req, res) {
+  if (checkCustomer(req)) {
+    Feedback.findOneAndDelete({
+      feedbackId: req.params.feedbackId, email: req.user.email})
+      .then((result) => {
+        if (result) {
+          res.json({
+            message: "Feedback deleted successfully",
+            deleted_Feedback: result,
+          });
+        } else {
+          res.status(403).json({
+            message: "You can only delete feedback that you posted",
+          });
+        }
+      })
+      .catch((err) => {
+        res.json({
+          message: "Feedback deletion failed",
+          error: err,
+        });
+      });
+  } else if (checkAdmin(req)) {
+    Feedback.findOneAndDelete({ feedbackId: req.params.feedbackId })
+      .then((result) => {
+        res.json({
+          message: "Feedback deleted successfully by admin",
+          deleted_Feedback: result,
+        });
+      })
+      .catch((err) => {
+        res.json({
+          message: "Feedback deletion failed",
+          error: err,
+        });
+      });
+  } else {
+    res.status(403).json({
+      message: "Unauthorized to delete feedback",
+    });
+  }
+}
