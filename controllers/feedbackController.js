@@ -134,3 +134,21 @@ export function deleteFeedback(req, res) {
     });
   }
 }
+
+export function getAllFeedbacks(req, res) {
+  Feedback.find({})
+    .then((result) => {
+      res.json({
+        message: "All feedbacks",
+        feedbacks: result,
+      });
+    })
+    .catch((error) => {
+      res.json({
+        message: "Failed to get feedbacks",
+        error: error,
+      });
+    });
+}
+
+
