@@ -4,43 +4,66 @@ import { checkAdmin, checkCustomer } from './userController.js';
 
 
 export function createBooking(req, res) {
-    if(!checkCustomer(req)){
+    if (!checkCustomer(req)) {
         console.log(req.user.type);
         res.status(403).json({
             message: "Please login as a customer to continue the booking"
         });
         return;
     }
+    
     const starting = 1000;
 
-    Booking.countDocuments({})
-        .then((countDocuments) => {
-            var bookingId = starting + countDocuments + 1;
-            console.log(bookingId);
-            console.log(countDocuments);
-           
-            const newBooking = new Booking({
-                bookingId,
-                email: req.user.email,
-                roomId: req.body.roomId,
-                startDate: req.body.startDate,
-                endDate: req.body.endDate
+    Booking.findOne({
+        roomId: req.body.roomId,
+        $or: [
+            { startDate: { $lte: req.body.endDate }, endDate: { $gte: req.body.startDate } }
+        ]
+    })
+    .then((existingBooking) => {
+        if (existingBooking) {
+            return res.status(409).json({
+                message: "Room is already booked for the selected dates",
+                existingBooking
             });
-            return newBooking.save();
-        })
-        .then((result) => {
-            res.json({
-                message: "Booking created successfully",
-                result: result
+        }
+
+        Booking.countDocuments({})
+            .then((countDocuments) => {
+                var bookingId = starting + countDocuments + 1;
+                console.log(bookingId);
+                console.log(countDocuments);
+                
+                const newBooking = new Booking({
+                    bookingId,
+                    email: req.user.email,
+                    roomId: req.body.roomId,
+                    startDate: req.body.startDate,
+                    endDate: req.body.endDate
+                });
+                return newBooking.save();
+            })
+            .then((result) => {
+                res.json({
+                    message: "Booking created successfully",
+                    result: result
+                });
+            })
+            .catch((error) => {
+                res.json({
+                    message: "Booking failed",
+                    error: error
+                });
             });
-        })
-        .catch((error) => {
-            res.json({
-                message: "Booking failed",
-                error: error
-            });
-        }).catch();
+    })
+    .catch((error) => {
+        res.json({
+            message: "Booking check failed",
+            error: error
+        });
+    });
 }
+
 
 export function getBooking(req,res){
     if(checkAdmin(req)){
