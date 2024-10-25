@@ -89,6 +89,7 @@ export function deleteCategoryByName(req,res){
         res.status(403).json({
             message: "You are not allowed to delete Category",
         });
+        return;
     }
     Category.findOneAndDelete({name:req.params.name})
     .then(
