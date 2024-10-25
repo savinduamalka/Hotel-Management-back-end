@@ -7,22 +7,27 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// GET request handler
+
 export function getRequest(req, res) {
-  const email = req.body.email;
-  User.find({ email: email })
-    .then((u) => {
-      res.json(u);
+
+  const userEmail = req.user.email;
+  User.findOne({ email: userEmail })
+    .select('-password') 
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user); 
     })
     .catch((error) => {
-      res.status(400).json({
-        message: "An error has occured",
+      res.status(500).json({
+        message: "An error occurred while fetching user data",
         error: error.message,
       });
     });
 }
 
-// POST request handler
+
 export function postRequest(req, res) {
   const user = req.body;
   const password = user.password;
