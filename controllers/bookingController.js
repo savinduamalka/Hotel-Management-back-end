@@ -105,31 +105,36 @@ export function getBooking(req,res){
     }
 }
 
-export function cancelBooking(req, res){
-    if(!checkAdmin(req)){
+export function cancelBooking(req, res) {
+    if (!checkAdmin(req)) {
         res.json({
-            message: "You can not cancel a booking"
-        })
-        console.log(req.user.type);
+            message: "You are not authorized to update this booking"
+        });
         return;
     }
-    Booking.findOneAndUpdate({bookingId:req.params.bookingId},{status:"Cancelled", reason:req.body.reason},{new:true})
-    .then(
-        (result)=>{
-            res.json({
-                message:"Booking cancelled successfully",
-                result: result
-            });
-        }
-    ).catch(
-        (err)=>{
-            res.status(500).json({
-                message: "Failed to cancel the booking",
-                error: err
-            });
-        }
+
+    const newStatus = req.body.status; // status sent from the frontend
+    const newReason = req.body.reason || ""; // optional reason for the update
+
+    Booking.findOneAndUpdate(
+        { bookingId: req.params.bookingId },
+        { status: newStatus, reason: newReason },
+        { new: true }
     )
+    .then(result => {
+        res.json({
+            message: "Booking status updated successfully",
+            result: result
+        });
+    })
+    .catch(err => {
+        res.status(500).json({
+            message: "Failed to update the booking",
+            error: err
+        });
+    });
 }
+
 
 export function confirmBooking(req,res){
     if(!checkAdmin(req)){
