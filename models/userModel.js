@@ -1,4 +1,8 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
+
+
+dotenv.config();
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -42,7 +46,7 @@ const userSchema = new mongoose.Schema({
     },
     image:{
         type:String,
-        default:"https://isobarscience-1bfd8.kxcdn.com/wp-content/uploads/2020/09/default-profile-picture1.jpg"
+        default: process.env.DEFAULT_PROFILE_IMAGE
     }
    
 });
