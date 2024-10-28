@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -40,10 +41,14 @@ const userSchema = new mongoose.Schema({
         required: true,
         default: false
     },
+    image:{
+        type:String,
+        default:"https://isobarscience-1bfd8.kxcdn.com/wp-content/uploads/2020/09/default-profile-picture1.jpg"
+    }
    
 });
 
-// Create the "Users" model
+
 const User = mongoose.model("Users", userSchema);
 
 export default User;
