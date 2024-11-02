@@ -9,8 +9,7 @@ dotenv.config();
 
 
 export function getRequest(req, res) {
-
-  const userEmail = req.email;
+  const userEmail = req.user.email;
   User.findOne({ email: userEmail })
     .select('-password') 
     .then((user) => {
