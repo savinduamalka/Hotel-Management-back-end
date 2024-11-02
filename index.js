@@ -18,23 +18,23 @@ app.use(cors());
 app.use(bodyParser.json());
 const connection = process.env.MONGO_URL;
 
-//Authentication middleware
-app.use((req,res,next)=>{
-    const token =req.header("Authorization")?.replace("Bearer ","");
-    
-    if(token!=null){
-        jwt.verify(token,process.env.JWT_SECRET,(error,decoded)=>{
-        if(decoded!=null){
-        req.user=decoded;
-        next();
-        }else{
-            next();
+// Authentication middleware
+app.use((req, res, next) => {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+  
+    if (token) {
+      jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+        if (error) {
+          return res.status(403).json({ message: "Invalid token" });
         }
-    })
-    }else{
+        req.user = decoded;
         next();
+      });
+    } else {
+      next();
     }
-});
+  });
+  
 app.use("/api/users",userRouter);
 app.use("/api/gallery",galleryItemsRoute);
 app.use("/api/categories",categoryRouter);
