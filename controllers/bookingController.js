@@ -189,3 +189,36 @@ export function deleteBooking(req,res){
         }
     )
 }
+
+export default function getFilteredData(req, res) {
+    
+    if (!checkAdmin(req)) {
+        return res.status(403).json({
+            message: "You are not allowed to access this data"
+        });
+    }
+
+    Booking.find({
+        startDate: { $lte: req.body.endDate },
+        endDate: { $gte: req.body.startDate }
+    })
+    .then(result => {
+        if (result.length === 0) {
+            return res.status(404).json({
+                message: "No bookings found for the specified date range",
+                list: result
+            });
+        }
+        
+        res.json({
+            message: "Filtered data according to the date range",
+            list: result
+        });
+    })
+    .catch(err => {
+        res.status(500).json({
+            message: "Failed to get the filtered data",
+            error: err
+        });
+    });
+}
