@@ -47,11 +47,11 @@ app.use("/api/feedback",feedbackRouter);
 
 mongoose.connect(connection).then(
     ()=>{
-        console.log("Success");
+        console.log("Success connect with database");
     }
 ).catch(
     ()=>{
-        console.log("Fail");
+        console.log("Fail connect with database");
     }
 )
 
