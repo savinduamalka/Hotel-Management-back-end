@@ -154,3 +154,30 @@ export function checkCustomer(req){
   }
   return true;
 }
+
+export function sendOtpEmail(email,otp) {
+  
+  const transport = nodemailer.createTransport({
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: "amalkahks@gmail.com",
+      pass: "uykbuxuyekwufqqp",
+    },
+  });
+  const message = {
+    from : "amalkahks@gmail.com",
+    to : email,
+    subject : "Validating OTP",
+    text : "Your otp code is "+otp
+  }
+  transport.sendMail(message, (err, info) => {
+    if(err){
+      console.log(err);     
+    }else{
+      console.log(info)
+    }
+  });
+}
