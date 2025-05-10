@@ -30,10 +30,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    phone:{
-        type: String,
-        required: true
-    },
     disable:{
         type: Boolean,
         required: true,

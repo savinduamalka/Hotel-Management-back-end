@@ -30,6 +30,15 @@ export function getRequest(req, res) {
 export function postRequest(req, res) {
   const user = req.body;
   const password = user.password;
+
+
+  // Validate password
+  if (!password) {
+    return res.status(400).json({
+      message: "Password is required",
+    });
+  }
+
   const saltRound = 10;
   const hashPassword = bcrypt.hashSync(password, saltRound);
   user.password = hashPassword;
@@ -120,7 +129,7 @@ export function loginUsers(req, res) {
           firstName: user.firstname,
           lastName: user.lastname,
           type: user.type,
-          phone: user.phone,
+          pro
         };
         const token = jwt.sign( payloader , process.env.JWT_SECRET, {
           expiresIn: "48h",
@@ -154,6 +163,7 @@ export function checkCustomer(req){
   }
   return true;
 }
+
 
 export function sendOtpEmail(email,otp) {
   
