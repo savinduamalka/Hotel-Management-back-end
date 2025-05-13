@@ -2,11 +2,21 @@ import GalleryItems from "../models/galleryItems.js";
 import { checkAdmin } from "./userController.js";
 
 export function getGalleryItems(req, res) {
+  // Pagination logic
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = 10;
+  const skip = (page - 1) * limit;
 
-  GalleryItems.find()
-    .then((list) => {
+  Promise.all([
+    GalleryItems.find().skip(skip).limit(limit),
+    GalleryItems.countDocuments()
+  ])
+    .then(([list, total]) => {
       res.json({
         galleryItems: list,
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total
       });
     })
     .catch((error) => {
