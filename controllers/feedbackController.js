@@ -1,3 +1,18 @@
+export function getPublicVisibleFeedbacks(req, res) {
+  Feedback.find({ visibility: true })
+    .then((result) => {
+      res.json({
+        message: "Visible feedbacks for homepage",
+        feedbacks: result,
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: "Failed to get visible feedbacks",
+        error: error,
+      });
+    });
+}
 import Feedback from "../models/feedbackModel.js";
 import { checkAdmin, checkCustomer } from "./userController.js";
 
