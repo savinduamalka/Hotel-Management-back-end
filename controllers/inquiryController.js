@@ -36,6 +36,34 @@ export function createInquiry(req,res){
         });
 }
 
+export function publicInquiry(req, res) {
+  const starting = 10;
+    Inquiry.countDocuments({})
+        .then((countDocuments)=>{
+            var inquiryId = starting + countDocuments + 1;
+
+            const inquiry = new Inquiry({
+                inquiryId,
+                email: req.user.email,
+                phone: req.user.phone,
+                inquiryDescription: req.body.inquiryDescription
+            });
+            return inquiry.save();
+        })
+        .then((result)=>{
+            res.json({
+                message: "Inquiry created successfully",
+                inquiry: result
+            });
+        })
+        .catch((error)=>{
+            res.json({
+                message: "Inquiry failed",
+                error: error
+            });
+        });
+}
+
 export function getInquiry(req, res) {
     if (!checkAdmin(req) && !checkCustomer(req)) {
       return res.status(403).json({
