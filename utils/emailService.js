@@ -142,6 +142,143 @@ export function sendWelcomeEmail(email, userName) {
   return transporter.sendMail(mailOptions);
 }
 
+// Send password reset OTP email
+export function sendPasswordResetOtp(email, otp, userName = '') {
+  const mailOptions = {
+    from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
+    to: email,
+    subject: 'Password Reset - OTP Code',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #dc3545; text-align: center; margin-bottom: 20px;">
+            🔐 Password Reset Request
+          </h2>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6;">
+            Hello ${userName || 'there'},
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6;">
+            We received a request to reset your password for your ${
+              process.env.EMAIL_FROM_NAME
+            } account. Use the following OTP code to reset your password:
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background-color: #fff5f5; border: 2px dashed #dc3545; border-radius: 8px; padding: 20px; display: inline-block;">
+              <span style="font-size: 32px; font-weight: bold; color: #dc3545; letter-spacing: 5px;">
+                ${otp}
+              </span>
+            </div>
+          </div>
+          
+          <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <p style="color: #856404; font-size: 14px; margin: 0; line-height: 1.6;">
+              <strong>⚠️ Security Notice:</strong> This OTP is valid for 10 minutes only. If you didn't request a password reset, please ignore this email and your password will remain unchanged.
+            </p>
+          </div>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6;">
+            After entering the OTP, you'll be able to set a new password for your account.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          
+          <p style="color: #999; font-size: 12px; text-align: center;">
+            This is an automated message, please do not reply to this email.<br>
+            If you have any concerns, please contact our support team.
+          </p>
+        </div>
+      </div>
+    `,
+    text: `
+      🔐 Password Reset Request
+      
+      Hello ${userName || 'there'},
+      
+      We received a request to reset your password for your ${
+        process.env.EMAIL_FROM_NAME
+      } account.
+      
+      Your password reset OTP code is: ${otp}
+      
+      This code is valid for 10 minutes only.
+      
+      If you didn't request a password reset, please ignore this email and your password will remain unchanged.
+      
+      After entering the OTP, you'll be able to set a new password for your account.
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+// Send password reset confirmation email
+export function sendPasswordResetConfirmation(email, userName = '') {
+  const mailOptions = {
+    from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
+    to: email,
+    subject: 'Password Successfully Reset',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #28a745; text-align: center; margin-bottom: 20px;">
+            ✅ Password Successfully Reset
+          </h2>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6;">
+            Hello ${userName || 'there'},
+          </p>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6;">
+            Your password has been successfully reset for your ${
+              process.env.EMAIL_FROM_NAME
+            } account.
+          </p>
+          
+          <div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <p style="color: #155724; font-size: 14px; margin: 0; line-height: 1.6;">
+              <strong>🔒 Security Info:</strong> If you didn't make this change, please contact our support team immediately.
+            </p>
+          </div>
+          
+          <p style="color: #333; font-size: 16px; line-height: 1.6;">
+            You can now log in to your account using your new password.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://hotel-management-front-end-beige.vercel.app/login" style="background-color: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Login to Your Account
+            </a>
+          </div>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          
+          <p style="color: #999; font-size: 12px; text-align: center;">
+            This is an automated message, please do not reply to this email.
+          </p>
+        </div>
+      </div>
+    `,
+    text: `
+      ✅ Password Successfully Reset
+      
+      Hello ${userName || 'there'},
+      
+      Your password has been successfully reset for your ${
+        process.env.EMAIL_FROM_NAME
+      } account.
+      
+      You can now log in to your account using your new password.
+      
+      If you didn't make this change, please contact our support team immediately.
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
 // Test email configuration
 export async function verifyEmailConfig() {
   try {
