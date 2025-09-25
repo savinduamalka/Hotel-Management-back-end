@@ -71,3 +71,46 @@ export function getAllSubscriptions(req, res) {
       });
     });
 }
+
+// Delete subscription permanently (Admin only)
+export function deleteSubscription(req, res) {
+  const { email } = req.body;
+
+  // Check if user is authenticated
+  if (!req.user) {
+    return res.status(401).json({
+      message: 'User not authenticated'
+    });
+  }
+
+  // Check if user is admin
+  if (req.user.type !== 'admin') {
+    return res.status(403).json({
+      message: 'Access denied. Admin privileges required.'
+    });
+  }
+
+  if (!email) {
+    return res.status(400).json({
+      message: 'Email is required'
+    });
+  }
+
+  Subscription.deleteOne({ email: email })
+    .then((result) => {
+      if (result.deletedCount === 0) {
+        return res.status(404).json({
+          message: 'Subscription not found'
+        });
+      }
+      res.json({
+        message: 'Subscription deleted successfully'
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Failed to delete subscription',
+        error: error.message
+      });
+    });
+}
