@@ -1,9 +1,15 @@
 import mongoose from 'mongoose';
 import User from '../models/userModel.js';
+import Otp from '../models/otpModel.js';
 import { error } from 'console';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
+import {
+  generateOTP,
+  sendOtpEmail,
+  sendWelcomeEmail,
+} from '../utils/emailService.js';
 
 dotenv.config();
 
@@ -27,38 +33,97 @@ export function getRequest(req, res) {
 
 export function postRequest(req, res) {
   const user = req.body;
-  const password = user.password;
+  const { password, email, firstname } = user;
 
-  // Validate password
+  // Validate required fields
   if (!password) {
     return res.status(400).json({
       message: 'Password is required',
     });
   }
 
-  const saltRound = 10;
-  const hashPassword = bcrypt.hashSync(password, saltRound);
-  user.password = hashPassword;
-  const newUser = new User(user);
+  if (!email) {
+    return res.status(400).json({
+      message: 'Email is required',
+    });
+  }
 
-  newUser
-    .save()
-    .then(() => {
-      res.json({
-        message: 'User created successfully',
-      });
-    })
-    .catch((error) => {
-      if (error.code === 11000) {
-        res.status(400).json({
+  // Check if user already exists
+  User.findOne({ email: email })
+    .then((existingUser) => {
+      if (existingUser) {
+        return res.status(400).json({
           message: 'Email already exists, cannot create user',
         });
-      } else {
-        res.status(400).json({
-          message: "User can't be created",
-          error: error.message,
-        });
       }
+
+      // Hash password and create user (but don't set emailVerified to true yet)
+      const saltRound = 10;
+      const hashPassword = bcrypt.hashSync(password, saltRound);
+      user.password = hashPassword;
+      user.emailVerified = false; // Ensure email is not verified initially
+
+      const newUser = new User(user);
+
+      // Save user first
+      newUser
+        .save()
+        .then((savedUser) => {
+          // Generate and send OTP
+          const otp = generateOTP();
+
+          // Save OTP to database
+          const newOtp = new Otp({
+            email: email,
+            otp: otp,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+          });
+
+          newOtp
+            .save()
+            .then(() => {
+              // Send OTP email
+              sendOtpEmail(email, otp, firstname)
+                .then(() => {
+                  res.status(201).json({
+                    message:
+                      'User created successfully. Please check your email for OTP verification.',
+                    userId: savedUser._id,
+                    email: savedUser.email,
+                    requiresVerification: true,
+                  });
+                })
+                .catch((emailError) => {
+                  console.error('Email sending failed:', emailError);
+                  res.status(201).json({
+                    message:
+                      'User created but email sending failed. Please request OTP again.',
+                    userId: savedUser._id,
+                    email: savedUser.email,
+                    requiresVerification: true,
+                  });
+                });
+            })
+            .catch((otpError) => {
+              console.error('OTP creation failed:', otpError);
+              res.status(500).json({
+                message: 'User created but OTP generation failed',
+                error: otpError.message,
+              });
+            });
+        })
+        .catch((error) => {
+          res.status(400).json({
+            message: "User can't be created",
+            error: error.message,
+          });
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Database error',
+        error: error.message,
+      });
     });
 }
 
@@ -208,9 +273,18 @@ export function loginUsers(req, res) {
   User.findOne({ email: credential.email }).then((user) => {
     if (user == null) {
       res.status(403).json({
-        message: 'User cant find',
+        message: 'User not found',
       });
     } else {
+      // Check if email is verified
+      if (!user.emailVerified) {
+        return res.status(403).json({
+          message: 'Please verify your email before logging in',
+          requiresVerification: true,
+          email: user.email,
+        });
+      }
+
       const isPasswordMatch = bcrypt.compareSync(inputPassword, user.password);
       if (!isPasswordMatch) {
         res.status(403).json({
@@ -225,6 +299,7 @@ export function loginUsers(req, res) {
           type: user.type,
           image: user.image,
           whatsapp: user.whatsapp,
+          emailVerified: user.emailVerified,
         };
         const token = jwt.sign(payloader, process.env.JWT_SECRET, {
           expiresIn: '48h',
@@ -292,28 +367,173 @@ export function getAllUsers(req, res) {
     });
 }
 
-export function sendOtpEmail(email, otp) {
-  const transport = nodemailer.createTransport({
-    service: 'gmail',
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: 'amalkahks@gmail.com',
-      pass: 'uykbuxuyekwufqqp',
-    },
-  });
-  const message = {
-    from: 'amalkahks@gmail.com',
-    to: email,
-    subject: 'Validating OTP',
-    text: 'Your otp code is ' + otp,
-  };
-  transport.sendMail(message, (err, info) => {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log(info);
-    }
-  });
+// Verify OTP and activate user account
+export function verifyOtp(req, res) {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({
+      message: 'Email and OTP are required',
+    });
+  }
+
+  // Find the OTP record
+  Otp.findOne({ email: email, otp: parseInt(otp) })
+    .then((otpRecord) => {
+      if (!otpRecord) {
+        return res.status(400).json({
+          message: 'Invalid OTP or OTP not found',
+        });
+      }
+
+      // Check if OTP has expired (additional check, MongoDB TTL should handle this too)
+      if (otpRecord.expiresAt < new Date()) {
+        return res.status(400).json({
+          message: 'OTP has expired. Please request a new one.',
+        });
+      }
+
+      // OTP is valid, update user's email verification status
+      User.findOneAndUpdate(
+        { email: email },
+        { emailVerified: true },
+        { new: true }
+      )
+        .then((updatedUser) => {
+          if (!updatedUser) {
+            return res.status(404).json({
+              message: 'User not found',
+            });
+          }
+
+          // Delete the OTP record after successful verification
+          Otp.deleteOne({ _id: otpRecord._id })
+            .then(() => {
+              // Send welcome email
+              sendWelcomeEmail(email, updatedUser.firstname).catch(
+                (emailError) => {
+                  console.error('Welcome email sending failed:', emailError);
+                }
+              );
+
+              res.json({
+                message:
+                  'Email verified successfully! Your account is now active.',
+                user: {
+                  id: updatedUser._id,
+                  email: updatedUser.email,
+                  firstname: updatedUser.firstname,
+                  lastname: updatedUser.lastname,
+                  emailVerified: updatedUser.emailVerified,
+                },
+              });
+            })
+            .catch((deleteError) => {
+              console.error('OTP deletion failed:', deleteError);
+              // Still return success since verification was successful
+              res.json({
+                message:
+                  'Email verified successfully! Your account is now active.',
+                user: {
+                  id: updatedUser._id,
+                  email: updatedUser.email,
+                  firstname: updatedUser.firstname,
+                  lastname: updatedUser.lastname,
+                  emailVerified: updatedUser.emailVerified,
+                },
+              });
+            });
+        })
+        .catch((error) => {
+          res.status(500).json({
+            message: 'Failed to verify user',
+            error: error.message,
+          });
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Database error',
+        error: error.message,
+      });
+    });
+}
+
+// Resend OTP
+export function resendOtp(req, res) {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      message: 'Email is required',
+    });
+  }
+
+  // Check if user exists and is not verified
+  User.findOne({ email: email })
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({
+          message: 'User not found',
+        });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({
+          message: 'Email is already verified',
+        });
+      }
+
+      // Delete any existing OTP for this email
+      Otp.deleteMany({ email: email })
+        .then(() => {
+          // Generate new OTP
+          const otp = generateOTP();
+
+          // Save new OTP to database
+          const newOtp = new Otp({
+            email: email,
+            otp: otp,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+          });
+
+          newOtp
+            .save()
+            .then(() => {
+              // Send OTP email
+              sendOtpEmail(email, otp, user.firstname)
+                .then(() => {
+                  res.json({
+                    message: 'OTP has been resent to your email address',
+                    email: email,
+                  });
+                })
+                .catch((emailError) => {
+                  console.error('Email sending failed:', emailError);
+                  res.status(500).json({
+                    message: 'Failed to send OTP email',
+                    error: emailError.message,
+                  });
+                });
+            })
+            .catch((otpError) => {
+              res.status(500).json({
+                message: 'Failed to generate OTP',
+                error: otpError.message,
+              });
+            });
+        })
+        .catch((deleteError) => {
+          res.status(500).json({
+            message: 'Failed to clear existing OTP',
+            error: deleteError.message,
+          });
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Database error',
+        error: error.message,
+      });
+    });
 }
