@@ -79,9 +79,23 @@ export function putRequest(req, res) {
       if (!u) {
         return res.status(404).json({ message: "User not found" });
       }
+      
+      const payloader = {
+        id: u._id,
+        email: u.email,
+        firstName: u.firstname,
+        lastName: u.lastname,
+        type: u.type,
+        image: u.image
+      };
+      const token = jwt.sign(payloader, process.env.JWT_SECRET, {
+        expiresIn: "48h",
+      });
+      
       res.json({
         message: "User updated successfully",
         user: u,
+        token: token,
       });
     })
     .catch((error) => {
