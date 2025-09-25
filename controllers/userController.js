@@ -259,6 +259,39 @@ export function checkCustomer(req) {
   return true;
 }
 
+export function getAllUsers(req, res) {
+  // Check if user is authenticated
+  if (!req.user) {
+    return res.status(401).json({
+      message: 'User not authenticated',
+    });
+  }
+
+  // Check if user is admin
+  if (!checkAdmin(req)) {
+    return res.status(403).json({
+      message: 'Access denied. Admin privileges required.',
+    });
+  }
+
+  // Fetch all users excluding password field
+  User.find({})
+    .select('-password')
+    .then((users) => {
+      res.json({
+        message: 'All registered users',
+        count: users.length,
+        users: users,
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Failed to fetch users',
+        error: error.message,
+      });
+    });
+}
+
 export function sendOtpEmail(email, otp) {
   const transport = nodemailer.createTransport({
     service: 'gmail',
