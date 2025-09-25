@@ -86,7 +86,8 @@ export function putRequest(req, res) {
         firstName: u.firstname,
         lastName: u.lastname,
         type: u.type,
-        image: u.image
+        image: u.image,
+        whatsapp: u.whatsapp
       };
       const token = jwt.sign(payloader, process.env.JWT_SECRET, {
         expiresIn: "48h",
@@ -143,7 +144,8 @@ export function loginUsers(req, res) {
           firstName: user.firstname,
           lastName: user.lastname,
           type: user.type,
-          image:user.image
+          image:user.image,
+          whatsapp:user.whatsapp
         };
         const token = jwt.sign( payloader , process.env.JWT_SECRET, {
           expiresIn: "48h",
