@@ -9,6 +9,8 @@ import {
   generateOTP,
   sendOtpEmail,
   sendWelcomeEmail,
+  sendPasswordResetOtp,
+  sendPasswordResetConfirmation,
 } from '../utils/emailService.js';
 
 dotenv.config();
@@ -377,8 +379,12 @@ export function verifyOtp(req, res) {
     });
   }
 
-  // Find the OTP record
-  Otp.findOne({ email: email, otp: parseInt(otp) })
+  // Find the OTP record for email verification
+  Otp.findOne({
+    email: email,
+    otp: parseInt(otp),
+    purpose: 'email_verification',
+  })
     .then((otpRecord) => {
       if (!otpRecord) {
         return res.status(400).json({
@@ -484,8 +490,8 @@ export function resendOtp(req, res) {
         });
       }
 
-      // Delete any existing OTP for this email
-      Otp.deleteMany({ email: email })
+      // Delete any existing OTP for this email and purpose
+      Otp.deleteMany({ email: email, purpose: 'email_verification' })
         .then(() => {
           // Generate new OTP
           const otp = generateOTP();
@@ -527,6 +533,197 @@ export function resendOtp(req, res) {
           res.status(500).json({
             message: 'Failed to clear existing OTP',
             error: deleteError.message,
+          });
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Database error',
+        error: error.message,
+      });
+    });
+}
+
+// Request password reset (send OTP)
+export function requestPasswordReset(req, res) {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      message: 'Email is required',
+    });
+  }
+
+  // Check if user exists
+  User.findOne({ email: email })
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({
+          message: 'No account found with this email address',
+        });
+      }
+
+      // Check if user's email is verified
+      if (!user.emailVerified) {
+        return res.status(400).json({
+          message: 'Please verify your email first before resetting password',
+          requiresVerification: true,
+        });
+      }
+
+      // Delete any existing password reset OTPs for this email
+      Otp.deleteMany({ email: email, purpose: 'password_reset' })
+        .then(() => {
+          // Generate new OTP for password reset
+          const otp = generateOTP();
+
+          // Save new OTP to database
+          const newOtp = new Otp({
+            email: email,
+            otp: otp,
+            purpose: 'password_reset',
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+          });
+
+          newOtp
+            .save()
+            .then(() => {
+              // Send password reset OTP email
+              sendPasswordResetOtp(email, otp, user.firstname)
+                .then(() => {
+                  res.json({
+                    message:
+                      'Password reset OTP has been sent to your email address',
+                    email: email,
+                  });
+                })
+                .catch((emailError) => {
+                  console.error(
+                    'Password reset email sending failed:',
+                    emailError
+                  );
+                  res.status(500).json({
+                    message: 'Failed to send password reset email',
+                    error: emailError.message,
+                  });
+                });
+            })
+            .catch((otpError) => {
+              res.status(500).json({
+                message: 'Failed to generate password reset OTP',
+                error: otpError.message,
+              });
+            });
+        })
+        .catch((deleteError) => {
+          res.status(500).json({
+            message: 'Failed to clear existing password reset requests',
+            error: deleteError.message,
+          });
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Database error',
+        error: error.message,
+      });
+    });
+}
+
+// Verify password reset OTP and reset password
+export function resetPassword(req, res) {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({
+      message: 'Email, OTP, and new password are required',
+    });
+  }
+
+  // Validate password strength (you can customize these rules)
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      message: 'Password must be at least 6 characters long',
+    });
+  }
+
+  // Find the password reset OTP record
+  Otp.findOne({ email: email, otp: parseInt(otp), purpose: 'password_reset' })
+    .then((otpRecord) => {
+      if (!otpRecord) {
+        return res.status(400).json({
+          message: 'Invalid OTP or OTP not found',
+        });
+      }
+
+      // Check if OTP has expired
+      if (otpRecord.expiresAt < new Date()) {
+        return res.status(400).json({
+          message: 'OTP has expired. Please request a new password reset.',
+        });
+      }
+
+      // Find the user and update password
+      User.findOne({ email: email })
+        .then((user) => {
+          if (!user) {
+            return res.status(404).json({
+              message: 'User not found',
+            });
+          }
+
+          // Hash the new password
+          const saltRound = 10;
+          const hashPassword = bcrypt.hashSync(newPassword, saltRound);
+
+          // Update user's password
+          User.findOneAndUpdate(
+            { email: email },
+            { password: hashPassword },
+            { new: true }
+          )
+            .then((updatedUser) => {
+              // Delete the password reset OTP record after successful reset
+              Otp.deleteOne({ _id: otpRecord._id })
+                .then(() => {
+                  // Send password reset confirmation email
+                  sendPasswordResetConfirmation(
+                    email,
+                    updatedUser.firstname
+                  ).catch((emailError) => {
+                    console.error(
+                      'Password reset confirmation email failed:',
+                      emailError
+                    );
+                  });
+
+                  res.json({
+                    message:
+                      'Password reset successfully! You can now login with your new password.',
+                    success: true,
+                  });
+                })
+                .catch((deleteError) => {
+                  console.error('OTP deletion failed:', deleteError);
+                  // Still return success since password was reset
+                  res.json({
+                    message:
+                      'Password reset successfully! You can now login with your new password.',
+                    success: true,
+                  });
+                });
+            })
+            .catch((updateError) => {
+              res.status(500).json({
+                message: 'Failed to update password',
+                error: updateError.message,
+              });
+            });
+        })
+        .catch((userError) => {
+          res.status(500).json({
+            message: 'Failed to find user',
+            error: userError.message,
           });
         });
     })
