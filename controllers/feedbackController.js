@@ -76,6 +76,12 @@ export function updateFeedbackVisibility(req, res) {
 }
 
 export function getFeedback(req, res) {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "User not authenticated",
+    });
+  }
+
   if (checkAdmin(req)) {
     Feedback.find({})
       .then((result) => {
@@ -85,9 +91,9 @@ export function getFeedback(req, res) {
         });
       })
       .catch((error) => {
-        res.json({
+        res.status(500).json({
           message: "Failed to get feedbacks",
-          error: error,
+          error: error.message,
         });
       });
   } else {
@@ -99,9 +105,9 @@ export function getFeedback(req, res) {
         });
       })
       .catch((error) => {
-        res.json({
+        res.status(500).json({
           message: "Failed to get feedbacks",
-          error: error,
+          error: error.message,
         });
       });
   }
