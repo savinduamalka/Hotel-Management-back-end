@@ -1,41 +1,38 @@
-import mongoose from "mongoose";
-import User from "../models/userModel.js";
-import { error } from "console";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
-import dotenv from "dotenv";
+import mongoose from 'mongoose';
+import User from '../models/userModel.js';
+import { error } from 'console';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 
 dotenv.config();
-
 
 export function getRequest(req, res) {
   const userEmail = req.body.email;
   User.findOne({ email: userEmail })
-    .select('-password') 
+    .select('-password')
     .then((user) => {
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ message: 'User not found' });
       }
-      res.json(user); 
+      res.json(user);
     })
     .catch((error) => {
       res.status(500).json({
-        message: "An error occurred while fetching user data",
+        message: 'An error occurred while fetching user data',
         error: error.message,
       });
     });
 }
 
-
 export function postRequest(req, res) {
   const user = req.body;
   const password = user.password;
 
-
   // Validate password
   if (!password) {
     return res.status(400).json({
-      message: "Password is required",
+      message: 'Password is required',
     });
   }
 
@@ -48,13 +45,13 @@ export function postRequest(req, res) {
     .save()
     .then(() => {
       res.json({
-        message: "User created successfully",
+        message: 'User created successfully',
       });
     })
     .catch((error) => {
       if (error.code === 11000) {
         res.status(400).json({
-          message: "Email already exists, cannot create user",
+          message: 'Email already exists, cannot create user',
         });
       } else {
         res.status(400).json({
@@ -70,41 +67,123 @@ export function putRequest(req, res) {
   const email = req.body.email;
   const updateData = req.body;
 
-  User.findOneAndUpdate(
-    { email: email }, // Search by email
-    updateData, // Data to update
-    { new: true, runValidators: true } // Options to return updated doc and apply validation(Update krpu gaman db eka refresh krnn kalin postman eke kelinma pennnawa)
-  )
-    .then((u) => {
-      if (!u) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const payloader = {
-        id: u._id,
-        email: u.email,
-        firstName: u.firstname,
-        lastName: u.lastname,
-        type: u.type,
-        image: u.image,
-        whatsapp: u.whatsapp
-      };
-      const token = jwt.sign(payloader, process.env.JWT_SECRET, {
-        expiresIn: "48h",
+  // If password is being updated, validate the current password first
+  if (updateData.password) {
+    if (!updateData.currentPassword) {
+      return res.status(400).json({
+        message: 'Current password is required to change password',
       });
-      
-      res.json({
-        message: "User updated successfully",
-        user: u,
-        token: token,
+    }
+
+    // First, find the user to validate current password
+    User.findOne({ email: email })
+      .then((user) => {
+        if (!user) {
+          res.status(404).json({ message: 'User not found' });
+          return; // Stop execution here
+        }
+
+        // Validate current password
+        const isCurrentPasswordMatch = bcrypt.compareSync(
+          updateData.currentPassword,
+          user.password
+        );
+        if (!isCurrentPasswordMatch) {
+          res.status(400).json({
+            message: 'Current password is incorrect',
+          });
+          return; // Stop execution here
+        }
+
+        // Hash the new password
+        const saltRound = 10;
+        const hashPassword = bcrypt.hashSync(updateData.password, saltRound);
+        updateData.password = hashPassword;
+
+        // Remove currentPassword from updateData as it shouldn't be saved
+        delete updateData.currentPassword;
+
+        // Now update the user with the new hashed password
+        User.findOneAndUpdate({ email: email }, updateData, {
+          new: true,
+          runValidators: true,
+        })
+          .then((updatedUser) => {
+            if (!updatedUser) {
+              res.status(404).json({ message: 'User not found' });
+              return;
+            }
+
+            const payloader = {
+              id: updatedUser._id,
+              email: updatedUser.email,
+              firstName: updatedUser.firstname,
+              lastName: updatedUser.lastname,
+              type: updatedUser.type,
+              image: updatedUser.image,
+              whatsapp: updatedUser.whatsapp,
+            };
+            const token = jwt.sign(payloader, process.env.JWT_SECRET, {
+              expiresIn: '48h',
+            });
+
+            res.json({
+              message: 'User updated successfully',
+              user: updatedUser,
+              token: token,
+            });
+          })
+          .catch((error) => {
+            res.status(400).json({
+              message: 'Failed to update user',
+              error: error.message,
+            });
+          });
+      })
+      .catch((error) => {
+        res.status(500).json({
+          message: 'Failed to find user',
+          error: error.message,
+        });
       });
-    })
-    .catch((error) => {
-      res.status(400).json({
-        message: "Failed to update user",
-        error: error.message,
+  } else {
+    // If not updating password, proceed with normal update
+    User.findOneAndUpdate(
+      { email: email }, // Search by email
+      updateData, // Data to update
+      { new: true, runValidators: true } // Options to return updated doc and apply validation(Update krpu gaman db eka refresh krnn kalin postman eke kelinma pennnawa)
+    )
+      .then((u) => {
+        if (!u) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        const payloader = {
+          id: u._id,
+          email: u.email,
+          firstName: u.firstname,
+          lastName: u.lastname,
+          type: u.type,
+          image: u.image,
+          whatsapp: u.whatsapp,
+        };
+        const token = jwt.sign(payloader, process.env.JWT_SECRET, {
+          expiresIn: '48h',
+        });
+
+        res.json({
+          message: 'User updated successfully',
+          user: u,
+          token: token,
+        });
+      })
+      .catch((error) => {
+        res.status(400).json({
+          message: 'Failed to update user',
+          error: error.message,
+        });
       });
-    });
+  }
 }
 
 // DELETE request handler
@@ -116,7 +195,7 @@ export function deleteRequest(req, res) {
     })
     .catch((error) => {
       res.status(400).json({
-        message: "An error has occured",
+        message: 'An error has occured',
         error: error.message,
       });
     });
@@ -129,13 +208,13 @@ export function loginUsers(req, res) {
   User.findOne({ email: credential.email }).then((user) => {
     if (user == null) {
       res.status(403).json({
-        message: "User cant find",
+        message: 'User cant find',
       });
     } else {
       const isPasswordMatch = bcrypt.compareSync(inputPassword, user.password);
       if (!isPasswordMatch) {
         res.status(403).json({
-          message: "Password is incorrect",
+          message: 'Password is incorrect',
         });
       } else {
         const payloader = {
@@ -144,14 +223,14 @@ export function loginUsers(req, res) {
           firstName: user.firstname,
           lastName: user.lastname,
           type: user.type,
-          image:user.image,
-          whatsapp:user.whatsapp
+          image: user.image,
+          whatsapp: user.whatsapp,
         };
-        const token = jwt.sign( payloader , process.env.JWT_SECRET, {
-          expiresIn: "48h",
+        const token = jwt.sign(payloader, process.env.JWT_SECRET, {
+          expiresIn: '48h',
         });
         res.json({
-          message: "Login Success",
+          message: 'Login Success',
           detailsofuser: user,
           token: token,
         });
@@ -160,50 +239,48 @@ export function loginUsers(req, res) {
   });
 }
 
-export function checkAdmin(req){
-  if(!req.user){
+export function checkAdmin(req) {
+  if (!req.user) {
     return false;
   }
-  if(req.user.type != 'admin'){
-    return false;
-  }
-  return true;
-}
-
-export function checkCustomer(req){
-  if(!req.user){
-    return false;
-  }
-  if(req.user.type!='customer'){
+  if (req.user.type != 'admin') {
     return false;
   }
   return true;
 }
 
+export function checkCustomer(req) {
+  if (!req.user) {
+    return false;
+  }
+  if (req.user.type != 'customer') {
+    return false;
+  }
+  return true;
+}
 
-export function sendOtpEmail(email,otp) {
-  
+export function sendOtpEmail(email, otp) {
   const transport = nodemailer.createTransport({
-    service: "gmail",
-    host: "smtp.gmail.com",
+    service: 'gmail',
+    host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     auth: {
-      user: "amalkahks@gmail.com",
-      pass: "uykbuxuyekwufqqp",
+      user: 'amalkahks@gmail.com',
+      pass: 'uykbuxuyekwufqqp',
     },
   });
   const message = {
-    from : "amalkahks@gmail.com",
-    to : email,
-    subject : "Validating OTP",
-    text : "Your otp code is "+otp
-  }
+    from: 'amalkahks@gmail.com',
+    to: email,
+    subject: 'Validating OTP',
+    text: 'Your otp code is ' + otp,
+  };
   transport.sendMail(message, (err, info) => {
-    if(err){
-      console.log(err);     
-    }else{
-      console.log(info)
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(info);
     }
   });
 }
