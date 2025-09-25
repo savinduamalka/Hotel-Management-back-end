@@ -37,3 +37,37 @@ export function subscribeEmail(req, res) {
       }
     });
 }
+
+// Get all subscriptions (Admin only)
+export function getAllSubscriptions(req, res) {
+  // Check if user is authenticated
+  if (!req.user) {
+    return res.status(401).json({
+      message: 'User not authenticated'
+    });
+  }
+
+  // Check if user is admin
+  if (req.user.type !== 'admin') {
+    return res.status(403).json({
+      message: 'Access denied. Admin privileges required.'
+    });
+  }
+
+  // Fetch all active subscriptions
+  Subscription.find({ isActive: true })
+    .sort({ subscriptionDate: -1 })
+    .then((subscriptions) => {
+      res.json({
+        message: 'All email subscriptions',
+        count: subscriptions.length,
+        subscriptions: subscriptions
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        message: 'Failed to fetch subscriptions',
+        error: error.message
+      });
+    });
+}
