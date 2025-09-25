@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const otpSchema = mongoose.Schema({
   email: {
@@ -8,6 +8,12 @@ const otpSchema = mongoose.Schema({
   otp: {
     type: Number,
     required: true,
+  },
+  purpose: {
+    type: String,
+    required: true,
+    enum: ['email_verification', 'password_reset'],
+    default: 'email_verification',
   },
   createdAt: {
     type: Date,
@@ -20,5 +26,5 @@ const otpSchema = mongoose.Schema({
   },
 });
 
-const Otp = mongoose.model("otp", otpSchema);
+const Otp = mongoose.model('otp', otpSchema);
 export default Otp;
