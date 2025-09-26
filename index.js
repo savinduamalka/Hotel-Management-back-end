@@ -16,7 +16,36 @@ import { verifyEmailConfig } from './utils/emailService.js';
 
 dotenv.config();
 const app = express();
-app.use(cors());
+
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://hotel-management-front-b5g8wg1iv-savindu-amalkas-projects.vercel.app',
+  'http://localhost:5173', 
+  'https://brock-unbotanical-sona.ngrok-free.dev',
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg =
+        'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+  allowedHeaders: 'Content-Type,Authorization',
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
+
 app.use(bodyParser.json());
 const connection = process.env.MONGO_URL;
 
