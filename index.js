@@ -24,6 +24,7 @@ const allowedOrigins = [
   'https://hotel-management-front-b5g8wg1iv-savindu-amalkas-projects.vercel.app',
   'http://localhost:5173', 
   'https://brock-unbotanical-sona.ngrok-free.dev',
+  'https://bluehorizongalle.app'
 ];
 
 const corsOptions = {
