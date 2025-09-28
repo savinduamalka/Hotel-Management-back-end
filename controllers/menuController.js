@@ -23,10 +23,10 @@ export async function addMenuData(req, res) {
       if (!Array.isArray(rawItems)) continue;
 
       const items = rawItems.map((it) => ({
-        id: it.id, 
-        name: it.Name,
-        smallPrice: it['s:price'],
-        largePrice: it['l:price'],
+        id: it.id ?? it.itemId,
+        name: it.name ?? it.Name,
+        smallPrice: it.smallPrice ?? it['s:price'],
+        largePrice: it.largePrice ?? it['l:price'],
         image: it.image || '',
         hot: !!it.hot,
       }));
