@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         node-version: [22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +29,13 @@ jobs:
 
       - name: Create .env file
         run: |
-          touch .env
-          echo "${{ secrets.ENV_HOTEL_BOOKING_SYSTEM }}" > .env
+          cat <<EOF > .env
+          MONGO_URL=${{ secrets.MONGO_URL }}
+          EMAIL_USER=${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          EOF
 
       - name: Restart API with PM2
-        run: pm2 restart api || pm2 start server.js --name api
+        run: pm2 restart api --update-env || pm2 start server.js --name api --update-env
