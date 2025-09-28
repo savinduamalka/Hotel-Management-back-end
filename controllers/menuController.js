@@ -54,3 +54,31 @@ export async function getAllMenu(req, res) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 }
+
+// Get all hot items across categories
+export async function getHotMenu(req, res) {
+  try {
+    const categories = await MenuCategory.find({ 'items.hot': true });
+    const hotItems = [];
+
+    categories.forEach((cat) => {
+      cat.items
+        .filter((i) => i.hot)
+        .forEach((i) =>
+          hotItems.push({
+            category: cat.name,
+            id: i.id,
+            name: i.name,
+            smallPrice: i.smallPrice,
+            largePrice: i.largePrice,
+            image: i.image,
+            hot: i.hot,
+          })
+        );
+    });
+
+    res.json({ count: hotItems.length, hotItems });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+}
