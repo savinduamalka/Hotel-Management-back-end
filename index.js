@@ -18,29 +18,19 @@ import menuRouter from './routes/menuRouter.js';
 dotenv.config();
 const app = express();
 
-const defaultAllowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://hotel-management-front-b5g8wg1iv-savindu-amalkas-projects.vercel.app',
-  'https://brock-unbotanical-sona.ngrok-free.dev',
-  'https://bluehorizongalle.app',
-  'https://www.bluehorizongalle.app',
-];
-const envAllowed = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-      .map((o) => o.trim())
-      .filter(Boolean)
-  : [];
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowed])];
-const allowAll = process.env.ALLOW_ALL_ORIGINS === 'true';
+const rawFrontend = process.env.FRONTEND_URL || '';
+const frontendOrigin = rawFrontend.trim().replace(/\/?$/, '');
+if (!frontendOrigin) {
+  console.warn(
+    '[CORS] FRONTEND_URL not set. Only non-browser (no Origin) requests will be accepted.'
+  );
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser or same-origin requests (no Origin header)
-    if (!origin) {
-      return callback(null, true);
-    }
-    if (allowAll || allowedOrigins.includes(origin)) {
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/?$/, '');
+    if (frontendOrigin && normalized === frontendOrigin) {
       return callback(null, true);
     }
     console.warn(`[CORS] Blocked origin: ${origin}`);
@@ -52,7 +42,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Pre-flight support
+app.options('*', cors(corsOptions)); 
 
 // ----- Body Parsing -----
 app.use(bodyParser.json({ limit: '1mb' }));
@@ -88,8 +78,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', dbState: mongoose.connection.readyState });
 });
 
-// ----- Error Handling (including CORS fallthrough) -----
-// If CORS blocked, request will simply miss CORS headers & browser blocks; we still unify server errors.
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err); // keep stack for server logs
   if (res.headersSent) {
@@ -120,13 +108,12 @@ mongoose
     app.listen(PORT, () => {
       console.log(`🚀 Server listening on port ${PORT}`);
       console.log(
-        'Allowed origins:',
-        allowAll ? '[ALL ORIGINS]' : allowedOrigins.join(', ')
+        'Allowed frontend origin:',
+        frontendOrigin || '[NONE - only no-Origin requests]'
       );
     });
   })
   .catch((err) => {
     console.error('❌ Failed to connect to database:', err.message);
-    // Exit so PM2 restart logic can attempt again (avoids partial-running app without DB)
     process.exit(1);
   });
