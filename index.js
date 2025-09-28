@@ -19,8 +19,19 @@ dotenv.config();
 const app = express();
 
 const rawFrontend = process.env.FRONTEND_URL || '';
-const frontendOrigin = rawFrontend.trim().replace(/\/?$/, '');
-if (!frontendOrigin) {
+const baseOrigin = rawFrontend.trim().replace(/\/?$/, '');
+
+const allowedOrigins = new Set();
+if (baseOrigin) {
+  allowedOrigins.add(baseOrigin);
+  if (baseOrigin.includes('://www.')) {
+    allowedOrigins.add(baseOrigin.replace('://www.', '://'));
+  } else {
+    allowedOrigins.add(baseOrigin.replace('://', '://www.'));
+  }
+}
+
+if (allowedOrigins.size === 0) {
   console.warn(
     '[CORS] FRONTEND_URL not set. Only non-browser (no Origin) requests will be accepted.'
   );
@@ -28,13 +39,15 @@ if (!frontendOrigin) {
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      return callback(null, true); // Allow requests with no origin (like mobile apps or curl requests)
+    }
     const normalized = origin.replace(/\/?$/, '');
-    if (frontendOrigin && normalized === frontendOrigin) {
+    if (allowedOrigins.has(normalized)) {
       return callback(null, true);
     }
     console.warn(`[CORS] Blocked origin: ${origin}`);
-    return callback(null, false);
+    return callback(new Error('Not allowed by CORS'));
   },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
@@ -108,8 +121,10 @@ mongoose
     app.listen(PORT, () => {
       console.log(`🚀 Server listening on port ${PORT}`);
       console.log(
-        'Allowed frontend origin:',
-        frontendOrigin || '[NONE - only no-Origin requests]'
+        'Allowed frontend origins:',
+        allowedOrigins.size > 0
+          ? [...allowedOrigins].join(', ')
+          : '[NONE - only no-Origin requests]'
       );
     });
   })
