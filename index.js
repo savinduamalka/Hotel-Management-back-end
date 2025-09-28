@@ -13,6 +13,7 @@ import feedbackRouter from './routes/feedbackRouter.js';
 import subscriptionRouter from './routes/subscriptionRouter.js';
 import cors from 'cors';
 import { verifyEmailConfig } from './utils/emailService.js';
+import menuRouter from './routes/menuRouter.js';
 
 dotenv.config();
 const app = express();
@@ -74,6 +75,7 @@ app.use('/api/booking', bookingRouter);
 app.use('/api/inquiry', inqiuiryRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/subscription', subscriptionRouter);
+app.use('/api/menu', menuRouter);
 
 mongoose
   .connect(connection)
